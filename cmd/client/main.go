@@ -61,16 +61,21 @@ func one(output *os.File) {
 	if err != nil && err != mem.ErrNoPhysicalFootprint {
 		log.Fatalf("Unable to query hyperkit footprint: %v", err)
 	}
+	firefoxFootprint, err := mem.GetFootprint("firefox")
+	if err != nil && err != mem.ErrNoPhysicalFootprint {
+		log.Fatalf("Unable to query firefox footprint: %v", err)
+	}
 	vmstat, err := mem.GetVMStat()
 	if err != nil {
 		log.Fatalf("Unable to query vmstat: %v", err)
 	}
 	sample := sample.Sample{
-		Time:      time.Now(),
-		Meminfo:   mi,
-		PS:        ps,
-		Footprint: footprint,
-		VMStat:    vmstat,
+		Time:             time.Now(),
+		Meminfo:          mi,
+		PS:               ps,
+		Footprint:        footprint,
+		FirefoxFootprint: firefoxFootprint,
+		VMStat:           vmstat,
 	}
 
 	enc := json.NewEncoder(output)
