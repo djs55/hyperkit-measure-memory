@@ -11,6 +11,9 @@ import (
 // as the "physical footprint" in the "vmmap" utility.
 type Footprint int64
 
+// ErrNoPhysicalFootprint means the macOS version is too old to have a footprint.
+var ErrNoPhysicalFootprint = errors.New("there is no physical footprint on this macOS version")
+
 func parseVMMapSummary(txt string) (Footprint, error) {
 	for _, line := range strings.Split(txt, "\n") {
 		line = strings.TrimSpace(line)
@@ -39,7 +42,8 @@ func parseVMMapSummary(txt string) (Footprint, error) {
 		}
 		return Footprint(i * float64(multiplier)), nil
 	}
-	return Footprint(0), errors.New("Failed to read physical footprint")
+	// pre 10.14 there was no physical foorptint
+	return Footprint(0), ErrNoPhysicalFootprint
 }
 
 // GetFootprint returns the "physical footprint" of a process. This is shown as the

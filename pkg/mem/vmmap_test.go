@@ -74,3 +74,62 @@ func TestVMMapSummary(t *testing.T) {
 	// 3.7 GiB rounded down
 	assert.Equal(t, Footprint(3972844748), footprint)
 }
+
+var exampleVMMapSummary1012 = `
+Process:         com.docker.hyperkit [1387]
+Path:            /Applications/Docker.app/Contents/Resources/bin/com.docker.hyperkit
+Load Address:    0x105b55000
+Identifier:      com.docker.hyperkit
+Version:         ???
+Code Type:       X86-64
+Parent Process:  com.docker.driver.amd64-linux [1381]
+
+Date/Time:       2019-03-01 11:11:31.829 +0000
+Launch Time:     2019-03-01 11:08:41.499 +0000
+OS Version:      Mac OS X 10.12 (16A323)
+Report Version:  7
+Analysis Tool:   /usr/bin/vmmap
+----
+
+ReadOnly portion of Libraries: Total=194.3M resident=0K(0%) swapped_out_or_unallocated=194.3M(100%)
+Writable regions: Total=2.2G written=0K(0%) resident=0K(0%) swapped_out=0K(0%) unallocated=2.2G(100%)
+
+                                VIRTUAL   REGION
+REGION TYPE                        SIZE    COUNT (non-coalesced)
+===========                     =======  =======
+Activity Tracing                   256K        2
+Dispatch continuations            8192K        2
+IOKit                              112K        3
+Kernel Alloc Once                    8K        2
+MALLOC guard page                   16K        4
+MALLOC metadata                    180K        6
+MALLOC_LARGE                       2.2G        8         see MALLOC ZONE table below
+MALLOC_LARGE metadata                8K        2         see MALLOC ZONE table below
+MALLOC_SMALL                      24.0M        2         see MALLOC ZONE table below
+MALLOC_SMALL (empty)              8192K        2         see MALLOC ZONE table below
+MALLOC_TINY                       4096K        2         see MALLOC ZONE table below
+STACK GUARD                       56.1M       18
+Stack                             16.1M       18
+__DATA                            12.1M      139
+__LINKEDIT                       112.7M        6
+__TEXT                            81.5M      142
+__UNICODE                          556K        2
+__ctl_set                            4K        2
+__inout_port_set                     4K        2
+__lpc_dsdt_set                       4K        2
+__lpc_sysres_set                     4K        2
+__pci_devemu_set                     4K        2
+shared memory                       12K        4
+===========                     =======  =======
+TOTAL                              2.5G      351
+
+                                 VIRTUAL ALLOCATION      BYTES          REGION
+MALLOC ZONE                         SIZE      COUNT  ALLOCATED  % FULL   COUNT
+===========                      =======  =========  =========  ======  ======
+DefaultMallocZone_0x106233000       2.2G       1620       2.2G     98%      11
+`
+
+func TestVMMapSummary1012(t *testing.T) {
+	_, err := parseVMMapSummary(exampleVMMapSummary1012)
+	assert.Equal(t, ErrNoPhysicalFootprint, err)
+}
