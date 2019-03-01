@@ -14,7 +14,7 @@ import (
 // Graph is a simple time-series gnuplot graph
 type Graph struct {
 	Title string
-	Lines []Line
+	Lines []*Line
 }
 
 // Line represents the evolution of some labelled parameter over time
@@ -30,22 +30,21 @@ type Point struct {
 }
 
 // Render renders a graph to a .png
-func Render(g Graph, pngPath string) error {
+func (g Graph) Render(pngPath string) error {
 	dir, err := ioutil.TempDir("", "gnuplot")
 	if err != nil {
 		return err
 	}
 	defer os.RemoveAll(dir)
 
-	gpPath := filepath.Join(dir, "graph.gp")
-
+	if err := writeGp(g, dir, pngPath); err != nil {
+		return err
+	}
 	if err := writeDats(g, dir); err != nil {
 		return err
 	}
-	if err := writeGp(g, gpPath, pngPath); err != nil {
-		return err
-	}
-	cmd := exec.Command("gnuplot", gpPath)
+
+	cmd := exec.Command("gnuplot", gpPath(dir))
 	cmd.Dir = dir
 	out, err := cmd.CombinedOutput()
 	if err != nil {
@@ -59,7 +58,7 @@ func writeDats(g Graph, dir string) error {
 		return errors.New("There must be at least one line to plot")
 	}
 	for _, line := range g.Lines {
-		if err := writeDat(line, dir); err != nil {
+		if err := writeDat(*line, dir); err != nil {
 			return errors.Wrapf(err, "while plotting %s", line.Label)
 		}
 	}
@@ -87,19 +86,19 @@ func datPath(l Line, dir string) string {
 	return filepath.Join(dir, fmt.Sprintf("%s.dat", l.Label))
 }
 
-func gpPath(g Graph, dir string) string {
+func gpPath(dir string) string {
 	return filepath.Join(dir, "graph.gp")
 }
 
 func writeGp(g Graph, dir, pngPath string) error {
-	gp, err := os.Create(gpPath(g, dir))
+	gp, err := os.Create(gpPath(dir))
 	if err != nil {
 		return err
 	}
 	defer gp.Close()
 	var plots []string
 	for _, line := range g.Lines {
-		plots = append(plots, fmt.Sprintf("'%s' using 1:2 with points title '%s'", datPath(line, dir), line.Label))
+		plots = append(plots, fmt.Sprintf("'%s' using 1:2 with points title '%s'", filepath.Base(datPath(*line, dir)), line.Label))
 	}
 	lines := []string{
 		fmt.Sprintf("set terminal png"),
