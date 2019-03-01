@@ -37,7 +37,7 @@ func main() {
 			log.Printf("Failed to decode %s: %v", path, err)
 			continue
 		}
-		footprint.Points = append(footprint.Points, gnuplot.Point{
+		footprint.Points = append(footprint.Points, &gnuplot.Point{
 			Second: float64(s.Time.Unix()),
 			Memory: int64(s.Footprint),
 		})
@@ -46,6 +46,7 @@ func main() {
 			log.Fatalf("Failed to close %s: %v", path, err)
 		}
 	}
+	g.StartAtTimeZero()
 	if err := g.Render("/tmp/output.png"); err != nil {
 		log.Fatalf("Failed to render: %v", err)
 	}

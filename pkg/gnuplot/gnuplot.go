@@ -3,6 +3,7 @@ package gnuplot
 import (
 	"fmt"
 	"io/ioutil"
+	"math"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -19,7 +20,7 @@ type Graph struct {
 
 // Line represents the evolution of some labelled parameter over time
 type Line struct {
-	Points []Point
+	Points []*Point
 	Label  string
 }
 
@@ -30,7 +31,7 @@ type Point struct {
 }
 
 // Render renders a graph to a .png
-func (g Graph) Render(pngPath string) error {
+func (g *Graph) Render(pngPath string) error {
 	dir, err := ioutil.TempDir("", "gnuplot")
 	if err != nil {
 		return err
@@ -53,7 +54,25 @@ func (g Graph) Render(pngPath string) error {
 	return nil
 }
 
-func writeDats(g Graph, dir string) error {
+// StartAtTimeZero normalises the time axis to start at t=0
+func (g *Graph) StartAtTimeZero() {
+	for _, line := range g.Lines {
+		line.startAtTimeZero()
+	}
+}
+
+func (l *Line) startAtTimeZero() {
+	// find minimum time value
+	minimum := math.MaxFloat64
+	for _, point := range l.Points {
+		minimum = math.Min(minimum, point.Second)
+	}
+	for _, point := range l.Points {
+		point.Second = point.Second - minimum
+	}
+}
+
+func writeDats(g *Graph, dir string) error {
 	if len(g.Lines) == 0 {
 		return errors.New("There must be at least one line to plot")
 	}
@@ -90,7 +109,7 @@ func gpPath(dir string) string {
 	return filepath.Join(dir, "graph.gp")
 }
 
-func writeGp(g Graph, dir, pngPath string) error {
+func writeGp(g *Graph, dir, pngPath string) error {
 	gp, err := os.Create(gpPath(dir))
 	if err != nil {
 		return err
@@ -104,6 +123,8 @@ func writeGp(g Graph, dir, pngPath string) error {
 		fmt.Sprintf("set terminal png"),
 		fmt.Sprintf("set output '%s'", pngPath),
 		fmt.Sprintf("set title '%s'", g.Title),
+		//"set timefmt '%s'",
+		//"set xdata time",
 		fmt.Sprintf("plot %s", strings.Join(plots, ", ")),
 	}
 	for _, line := range lines {
