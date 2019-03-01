@@ -58,7 +58,7 @@ func one(output *os.File) {
 		log.Fatalf("Unable to query ps: %v", err)
 	}
 	footprint, err := mem.GetFootprint("com.docker.hyperkit")
-	if err != nil {
+	if err != nil && err != mem.ErrNoPhysicalFootprint {
 		log.Fatalf("Unable to query hyperkit footprint: %v", err)
 	}
 	vmstat, err := mem.GetVMStat()
