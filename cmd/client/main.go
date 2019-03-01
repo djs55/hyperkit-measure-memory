@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/djs55/hyperkit-measure-memory/pkg/mem"
@@ -13,11 +14,19 @@ import (
 )
 
 func main() {
-	output := os.Stdout
-	fmt.Fprintf(output, "[\n")
-
-	for {
+	if err := os.Mkdir("results", 0755); err != nil && !os.IsExist(err) {
+		log.Fatalf("Failed to create results directory: %v", err)
+	}
+	for count := 0; ; count++ {
+		path := filepath.Join("results", fmt.Sprintf("%d", count))
+		output, err := os.Create(path)
+		if err != nil {
+			log.Fatalf("Failed to create %s: %v", path, err)
+		}
 		one(output)
+		if err := output.Close(); err != nil {
+			log.Fatalf("Failed to close %s: %v", path, err)
+		}
 		time.Sleep(time.Second)
 	}
 }
