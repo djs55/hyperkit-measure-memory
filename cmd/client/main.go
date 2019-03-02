@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"log"
 	"net"
@@ -14,11 +15,17 @@ import (
 )
 
 func main() {
-	if err := os.Mkdir("results", 0755); err != nil && !os.IsExist(err) {
+	var interval int
+	flag.IntVar(&interval, "interval", 60, "interval between samples in seconds")
+	var results string
+	flag.StringVar(&results, "results", "results", "directory to contain results")
+	flag.Parse()
+
+	if err := os.Mkdir(results, 0755); err != nil && !os.IsExist(err) {
 		log.Fatalf("Failed to create results directory: %v", err)
 	}
 	for count := 0; ; count++ {
-		path := filepath.Join("results", fmt.Sprintf("%d", count))
+		path := filepath.Join(results, fmt.Sprintf("%d", count))
 		output, err := os.Create(path)
 		if err != nil {
 			log.Fatalf("Failed to create %s: %v", path, err)
@@ -27,7 +34,7 @@ func main() {
 		if err := output.Close(); err != nil {
 			log.Fatalf("Failed to close %s: %v", path, err)
 		}
-		time.Sleep(time.Second)
+		time.Sleep(time.Duration(interval) * time.Second)
 	}
 }
 
