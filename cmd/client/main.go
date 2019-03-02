@@ -12,6 +12,7 @@ import (
 
 	"github.com/djs55/hyperkit-measure-memory/pkg/mem"
 	"github.com/djs55/hyperkit-measure-memory/pkg/sample"
+	"github.com/pkg/errors"
 )
 
 func main() {
@@ -24,17 +25,27 @@ func main() {
 	if err := os.Mkdir(results, 0755); err != nil && !os.IsExist(err) {
 		log.Fatalf("Failed to create results directory: %v", err)
 	}
-	for count := 0; ; count++ {
+	count := 0
+	for {
 		path := filepath.Join(results, fmt.Sprintf("%d", count))
 		output, err := os.Create(path)
 		if err != nil {
 			log.Fatalf("Failed to create %s: %v", path, err)
 		}
-		one(output)
+		writeErr := one(output)
 		if err := output.Close(); err != nil {
 			log.Fatalf("Failed to close %s: %v", path, err)
 		}
 		time.Sleep(time.Duration(interval) * time.Second)
+
+		if writeErr != nil {
+			log.Println(writeErr)
+			if err := os.Remove(path); err != nil {
+				log.Fatalf("Failed to remove %s: %v", path, err)
+			}
+			continue
+		}
+		count++
 	}
 }
 
@@ -49,7 +60,7 @@ func connect() net.Conn {
 	}
 }
 
-func one(output *os.File) {
+func one(output *os.File) error {
 	conn := connect()
 	defer conn.Close()
 
@@ -57,24 +68,24 @@ func one(output *os.File) {
 
 	dec := json.NewDecoder(conn)
 	if err := dec.Decode(&mi); err != nil {
-		log.Fatalf("Unable to decode json: %v", err)
+		return errors.Wrapf(err, "Unable to decode json")
 	}
 
 	ps, err := mem.GetPS()
 	if err != nil {
-		log.Fatalf("Unable to query ps: %v", err)
+		return errors.Wrapf(err, "Unable to query ps")
 	}
 	footprint, err := mem.GetFootprint("com.docker.hyperkit")
 	if err != nil && err != mem.ErrNoPhysicalFootprint {
-		log.Fatalf("Unable to query hyperkit footprint: %v", err)
+		return errors.Wrapf(err, "Unable to query hyperkit footprint")
 	}
 	firefoxFootprint, err := mem.GetFootprint("firefox")
 	if err != nil && err != mem.ErrNoPhysicalFootprint {
-		log.Fatalf("Unable to query firefox footprint: %v", err)
+		return errors.Wrapf(err, "Unable to query firefox footprint")
 	}
 	vmstat, err := mem.GetVMStat()
 	if err != nil {
-		log.Fatalf("Unable to query vmstat: %v", err)
+		return errors.Wrapf(err, "Unable to query vmstat: %v")
 	}
 	sample := sample.Sample{
 		Time:             time.Now(),
@@ -87,6 +98,7 @@ func one(output *os.File) {
 
 	enc := json.NewEncoder(output)
 	if err := enc.Encode(&sample); err != nil {
-		log.Fatalf("Unable to write sample: %v", err)
+		return errors.Wrapf(err, "Unable to write sample")
 	}
+	return nil
 }
