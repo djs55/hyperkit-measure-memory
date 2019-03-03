@@ -1,50 +1,28 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
 	"log"
-	"os"
-	"path/filepath"
 
 	"github.com/djs55/hyperkit-measure-memory/pkg/gnuplot"
 	"github.com/djs55/hyperkit-measure-memory/pkg/sample"
 )
 
 func main() {
+	points, err := sample.ReadDir("10.14-idle", func(s sample.Sample) int64 {
+		return int64(s.Footprint)
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
 	footprint := gnuplot.Line{
-		Label: "physical footprint",
+		Label:  "physical footprint",
+		Points: points,
 	}
 	g := gnuplot.Graph{
 		Title: "hyperkit physical footprint",
 		Lines: []*gnuplot.Line{
 			&footprint,
 		},
-	}
-
-	for count := 0; ; count++ {
-		path := filepath.Join("results", fmt.Sprintf("%d", count))
-		input, err := os.Open(path)
-		if os.IsNotExist(err) {
-			break
-		}
-		if err != nil {
-			log.Fatalf("Failed to open %s: %v", path, err)
-		}
-		dec := json.NewDecoder(input)
-		var s sample.Sample
-		if err := dec.Decode(&s); err != nil {
-			log.Printf("Failed to decode %s: %v", path, err)
-			continue
-		}
-		footprint.Points = append(footprint.Points, &gnuplot.Point{
-			Second: float64(s.Time.Unix()),
-			Memory: int64(s.Footprint),
-		})
-
-		if err := input.Close(); err != nil {
-			log.Fatalf("Failed to close %s: %v", path, err)
-		}
 	}
 	g.StartAtTimeZero()
 	if err := g.Render("/tmp/output.png"); err != nil {
