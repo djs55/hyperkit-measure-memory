@@ -29,6 +29,10 @@ type Point struct {
 	Memory int64   // Memory value
 }
 
+const kib = int64(1024)
+const mib = int64(1024) * kib
+const gib = int64(1024) * mib
+
 // Render renders a graph to a .png
 func (g *Graph) Render(pngPath string) error {
 	dir, err := ioutil.TempDir("", "gnuplot")
@@ -75,7 +79,7 @@ func writeDat(l Line, dir string) error {
 		return err
 	}
 	for _, point := range l.Points {
-		if _, err := fmt.Fprintf(dat, "%f %d\n", point.Second, point.Memory); err != nil {
+		if _, err := fmt.Fprintf(dat, "%f %f\n", point.Second, float64(point.Memory)/float64(gib)); err != nil {
 			return err
 		}
 	}
@@ -100,10 +104,20 @@ func writeGp(g *Graph, dir, pngPath string) error {
 	for _, line := range g.Lines {
 		plots = append(plots, fmt.Sprintf("'%s' using 1:2 with points title '%s'", filepath.Base(datPath(*line, dir)), line.Label))
 	}
+	path := pngPath
+	if !filepath.IsAbs(pngPath) {
+		cwd, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+		path = filepath.Join(cwd, pngPath)
+	}
 	lines := []string{
 		fmt.Sprintf("set terminal png"),
-		fmt.Sprintf("set output '%s'", pngPath),
+		fmt.Sprintf("set output '%s'", path),
 		fmt.Sprintf("set title '%s'", g.Title),
+		fmt.Sprintf("set xlabel 'Time/s'"),
+		fmt.Sprintf("set ylabel 'Memory/GiB'"),
 		//"set timefmt '%s'",
 		//"set xdata time",
 		fmt.Sprintf("plot %s", strings.Join(plots, ", ")),
