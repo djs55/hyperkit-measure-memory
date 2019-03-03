@@ -24,7 +24,6 @@ func main() {
 			&footprint,
 		},
 	}
-	g.StartAtTimeZero()
 	if err := g.Render("/tmp/output.png"); err != nil {
 		log.Fatalf("Failed to render: %v", err)
 	}

@@ -3,7 +3,6 @@ package gnuplot
 import (
 	"fmt"
 	"io/ioutil"
-	"math"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -52,24 +51,6 @@ func (g *Graph) Render(pngPath string) error {
 		return errors.Wrapf(err, "gnuplot: %s", out)
 	}
 	return nil
-}
-
-// StartAtTimeZero normalises the time axis to start at t=0
-func (g *Graph) StartAtTimeZero() {
-	for _, line := range g.Lines {
-		line.startAtTimeZero()
-	}
-}
-
-func (l *Line) startAtTimeZero() {
-	// find minimum time value
-	minimum := math.MaxFloat64
-	for _, point := range l.Points {
-		minimum = math.Min(minimum, point.Second)
-	}
-	for _, point := range l.Points {
-		point.Second = point.Second - minimum
-	}
 }
 
 func writeDats(g *Graph, dir string) error {

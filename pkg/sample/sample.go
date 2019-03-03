@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math"
 	"os"
 	"path/filepath"
 	"time"
@@ -50,5 +51,17 @@ func ReadDir(dir string, f func(s Sample) int64) ([]*gnuplot.Point, error) {
 			return nil, errors.Wrapf(err, "Failed to close %s", path)
 		}
 	}
+	startAtTimeZero(points)
 	return points, nil
+}
+
+func startAtTimeZero(points []*gnuplot.Point) {
+	// find minimum time value
+	minimum := math.MaxFloat64
+	for _, point := range points {
+		minimum = math.Min(minimum, point.Second)
+	}
+	for _, point := range points {
+		point.Second = point.Second - minimum
+	}
 }
