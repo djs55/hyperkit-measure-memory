@@ -57,8 +57,12 @@ func doHyperkit(running, macOS int) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	t := "Docker"
+	if running == k8s {
+		t = "k8s"
+	}
 	g := gnuplot.Graph{
-		Title: "hyperkit physical footprint vs RSS vs VSZ, 10.14, idle k8s",
+		Title: "hyperkit physical footprint vs RSS vs VSZ, 10.14, idle " + t,
 		Lines: []*gnuplot.Line{
 			&gnuplot.Line{
 				Label:  "physical footprint",
@@ -109,8 +113,12 @@ func doFirefox(running, macOS int) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	t := "Docker"
+	if running == k8s {
+		t = "k8s"
+	}
 	g := gnuplot.Graph{
-		Title: "firefox physical footprint vs RSS vs VSZ, 10.14, idle Docker",
+		Title: "firefox physical footprint vs RSS vs VSZ, 10.14, idle " + t,
 		Lines: []*gnuplot.Line{
 			&gnuplot.Line{
 				Label:  "physical footprint",
