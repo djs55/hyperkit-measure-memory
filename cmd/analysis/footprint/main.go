@@ -7,18 +7,28 @@ import (
 	"github.com/djs55/hyperkit-measure-memory/pkg/sample"
 )
 
+const (
+	docker = 0
+	k8s    = iota
+
+	macOS1012 = 0
+	macOS1014 = iota
+)
+
 var (
-	dir      = "10.14-idle"
 	hyperkit = "com.docker.hyperkit"
 	firefox  = "firefox"
 )
 
 func main() {
-	doHyperkit()
-	doFirefox()
+	doHyperkit(docker, macOS1014)
+	doFirefox(docker, macOS1014)
+	doHyperkit(k8s, macOS1014)
+	doFirefox(k8s, macOS1014)
 }
 
-func doHyperkit() {
+func doHyperkit(running, macOS int) {
+	dir := getDir(running, macOS)
 	footprintPoints, err := sample.ReadDir(dir, func(s sample.Sample) int64 {
 		return int64(s.Footprint)
 	})
@@ -48,7 +58,7 @@ func doHyperkit() {
 		log.Fatal(err)
 	}
 	g := gnuplot.Graph{
-		Title: "hyperkit physical footprint vs RSS vs VSZ, 10.14, idle Docker",
+		Title: "hyperkit physical footprint vs RSS vs VSZ, 10.14, idle k8s",
 		Lines: []*gnuplot.Line{
 			&gnuplot.Line{
 				Label:  "physical footprint",
@@ -64,12 +74,13 @@ func doHyperkit() {
 			},
 		},
 	}
-	if err := g.Render("footprint-docker.png"); err != nil {
+	if err := g.Render("footprint-hyperkit-" + dir + ".png"); err != nil {
 		log.Fatalf("Failed to render: %v", err)
 	}
 }
 
-func doFirefox() {
+func doFirefox(running, macOS int) {
+	dir := getDir(running, macOS)
 	footprintPoints, err := sample.ReadDir(dir, func(s sample.Sample) int64 {
 		return int64(s.FirefoxFootprint)
 	})
@@ -115,7 +126,19 @@ func doFirefox() {
 			},
 		},
 	}
-	if err := g.Render("footprint-firefox.png"); err != nil {
+	if err := g.Render("footprint-firefox-" + dir + ".png"); err != nil {
 		log.Fatalf("Failed to render: %v", err)
 	}
+}
+
+func getDir(running, macOS int) string {
+	m := "10.12"
+	if macOS == macOS1014 {
+		m = "10.14"
+	}
+	r := "idle"
+	if running == k8s {
+		r = "k8s"
+	}
+	return m + "-" + r
 }
