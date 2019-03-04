@@ -25,6 +25,10 @@ func main() {
 	doFirefox(docker, macOS1014)
 	doHyperkit(k8s, macOS1014)
 	doFirefox(k8s, macOS1014)
+	doHyperkit(docker, macOS1012)
+	doFirefox(docker, macOS1012)
+	doHyperkit(k8s, macOS1012)
+	doFirefox(k8s, macOS1012)
 }
 
 func doHyperkit(running, macOS int) {
