@@ -21,6 +21,7 @@ type Sample struct {
 	PS               []mem.PS
 	Footprint        mem.Footprint
 	FirefoxFootprint mem.Footprint
+	TouchFootprint   mem.Footprint
 	VMStat           mem.VMStat
 }
 

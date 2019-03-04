@@ -83,6 +83,10 @@ func one(output *os.File) error {
 	if err != nil && err != mem.ErrNoPhysicalFootprint {
 		return errors.Wrapf(err, "Unable to query firefox footprint")
 	}
+	touchFootprint, err := mem.GetFootprint("touch")
+	if err != nil && err != mem.ErrNoPhysicalFootprint {
+		return errors.Wrapf(err, "Unable to query touch footprint")
+	}
 	vmstat, err := mem.GetVMStat()
 	if err != nil {
 		return errors.Wrapf(err, "Unable to query vmstat: %v")
@@ -93,6 +97,7 @@ func one(output *os.File) error {
 		PS:               ps,
 		Footprint:        footprint,
 		FirefoxFootprint: firefoxFootprint,
+		TouchFootprint:   touchFootprint,
 		VMStat:           vmstat,
 	}
 
