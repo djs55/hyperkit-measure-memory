@@ -33,12 +33,7 @@ func main() {
 
 func doHyperkit(running, macOS int) {
 	dir := getDir(running, macOS)
-	footprintPoints, err := sample.ReadDir(dir, func(s sample.Sample) int64 {
-		return int64(s.Footprint)
-	})
-	if err != nil {
-		log.Fatal(err)
-	}
+
 	VSZPoints, err := sample.ReadDir(dir, func(s sample.Sample) int64 {
 		for _, command := range s.PS {
 			if command.Command == hyperkit {
@@ -65,22 +60,36 @@ func doHyperkit(running, macOS int) {
 	if running == k8s {
 		t = "k8s"
 	}
-	g := gnuplot.Graph{
-		Title: "hyperkit physical footprint vs RSS vs VSZ, 10.14, idle " + t,
-		Lines: []*gnuplot.Line{
-			&gnuplot.Line{
-				Label:  "physical footprint",
-				Points: footprintPoints,
-			},
-			&gnuplot.Line{
-				Label:  "Resident Memory (RSS)",
-				Points: RSSPoints,
-			},
-			&gnuplot.Line{
-				Label:  "Virtual Size (VSZ)",
-				Points: VSZPoints,
-			},
+	m := "10.12"
+	if macOS == macOS1014 {
+		m = "10.14"
+	}
+	lines := []*gnuplot.Line{
+		&gnuplot.Line{
+			Label:  "Resident Memory (RSS)",
+			Points: RSSPoints,
 		},
+		&gnuplot.Line{
+			Label:  "Virtual Size (VSZ)",
+			Points: VSZPoints,
+		},
+	}
+	if macOS == macOS1014 {
+		footprintPoints, err := sample.ReadDir(dir, func(s sample.Sample) int64 {
+			return int64(s.Footprint)
+		})
+		if err != nil {
+			log.Fatal(err)
+		}
+		lines = append(lines, &gnuplot.Line{
+			Label:  "physical footprint",
+			Points: footprintPoints,
+		})
+	}
+
+	g := gnuplot.Graph{
+		Title: "hyperkit memory usage, " + m + " + " + t,
+		Lines: lines,
 	}
 	if err := g.Render("footprint-hyperkit-" + dir + ".png"); err != nil {
 		log.Fatalf("Failed to render: %v", err)
@@ -89,12 +98,6 @@ func doHyperkit(running, macOS int) {
 
 func doFirefox(running, macOS int) {
 	dir := getDir(running, macOS)
-	footprintPoints, err := sample.ReadDir(dir, func(s sample.Sample) int64 {
-		return int64(s.FirefoxFootprint)
-	})
-	if err != nil {
-		log.Fatal(err)
-	}
 	VSZPoints, err := sample.ReadDir(dir, func(s sample.Sample) int64 {
 		for _, command := range s.PS {
 			if command.Command == firefox {
@@ -121,22 +124,35 @@ func doFirefox(running, macOS int) {
 	if running == k8s {
 		t = "k8s"
 	}
-	g := gnuplot.Graph{
-		Title: "firefox physical footprint vs RSS vs VSZ, 10.14, idle " + t,
-		Lines: []*gnuplot.Line{
-			&gnuplot.Line{
-				Label:  "physical footprint",
-				Points: footprintPoints,
-			},
-			&gnuplot.Line{
-				Label:  "Resident Memory (RSS)",
-				Points: RSSPoints,
-			},
-			&gnuplot.Line{
-				Label:  "Virtual Size (VSZ)",
-				Points: VSZPoints,
-			},
+	m := "10.12"
+	if macOS == macOS1014 {
+		m = "10.14"
+	}
+	lines := []*gnuplot.Line{
+		&gnuplot.Line{
+			Label:  "Resident Memory (RSS)",
+			Points: RSSPoints,
 		},
+		&gnuplot.Line{
+			Label:  "Virtual Size (VSZ)",
+			Points: VSZPoints,
+		},
+	}
+	if macOS == macOS1014 {
+		footprintPoints, err := sample.ReadDir(dir, func(s sample.Sample) int64 {
+			return int64(s.FirefoxFootprint)
+		})
+		if err != nil {
+			log.Fatal(err)
+		}
+		lines = append(lines, &gnuplot.Line{
+			Label:  "physical footprint",
+			Points: footprintPoints,
+		})
+	}
+	g := gnuplot.Graph{
+		Title: "firefox memory usage, " + m + " + " + t,
+		Lines: lines,
 	}
 	if err := g.Render("footprint-firefox-" + dir + ".png"); err != nil {
 		log.Fatalf("Failed to render: %v", err)

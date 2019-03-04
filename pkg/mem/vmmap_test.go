@@ -75,6 +75,33 @@ func TestVMMapSummary(t *testing.T) {
 	assert.Equal(t, Footprint(3972844748), footprint)
 }
 
+var exampleVMMapSummaryFirefox1014 = `
+Process:         firefox [7675]
+Path:            /Applications/Firefox.app/Contents/MacOS/firefox
+Load Address:    0x101dd8000
+Identifier:      org.mozilla.firefox
+Version:         65.0.2 (6519.2.25)
+Code Type:       X86-64
+Parent Process:  ??? [1]
+
+Date/Time:       2019-03-04 10:37:10.344 +0000
+Launch Time:     2019-03-01 17:11:35.641 +0000
+OS Version:      Mac OS X 10.14.1 (18B75)
+Report Version:  7
+Analysis Tool:   /Applications/Xcode.app/Contents/Developer/usr/bin/vmmap
+Analysis Tool Version:  Xcode 10.1 (10B61)
+
+Physical footprint:         307.2M
+Physical footprint (peak):  323.7M
+`
+
+func TestVMMapSummaryFirefox(t *testing.T) {
+	footprint, err := parseVMMapSummary(exampleVMMapSummaryFirefox1014)
+	assert.Nil(t, err)
+	// 307.2M rounded down
+	assert.Equal(t, Footprint(322122547), footprint)
+}
+
 var exampleVMMapSummary1012 = `
 Process:         com.docker.hyperkit [1387]
 Path:            /Applications/Docker.app/Contents/Resources/bin/com.docker.hyperkit
