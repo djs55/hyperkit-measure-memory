@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"log"
 
 	"github.com/djs55/hyperkit-measure-memory/pkg/gnuplot"
@@ -14,9 +15,14 @@ const (
 
 var (
 	touch = "touch"
+
+	footprint1012GiB = int64(0)
 )
 
 func main() {
+	flag.Int64Var(&footprint1012GiB, "footprint-10.12", int64(0), "manually observed footprint on 10.12")
+	flag.Parse()
+
 	doTouch(macOS1012)
 	doTouch(macOS1014)
 }
@@ -60,18 +66,19 @@ func doTouch(macOS int) {
 			Points: VSZPoints,
 		},
 	}
-	if macOS == macOS1014 {
-		footprintPoints, err := sample.ReadDir(dir, func(s sample.Sample) int64 {
+	footprintPoints, err := sample.ReadDir(dir, func(s sample.Sample) int64 {
+		if macOS == macOS1014 {
 			return int64(s.TouchFootprint)
-		})
-		if err != nil {
-			log.Fatal(err)
 		}
-		lines = append(lines, &gnuplot.Line{
-			Label:  "physical footprint",
-			Points: footprintPoints,
-		})
+		return footprint1012GiB * int64(1024) * int64(1024) * int64(1024)
+	})
+	if err != nil {
+		log.Fatal(err)
 	}
+	lines = append(lines, &gnuplot.Line{
+		Label:  "physical footprint",
+		Points: footprintPoints,
+	})
 
 	g := gnuplot.Graph{
 		Title: "minimal C program memory usage, " + m,
