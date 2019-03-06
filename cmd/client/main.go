@@ -85,7 +85,8 @@ func one(output *os.File) error {
 	}
 	touchFootprint, err := mem.GetFootprint("touch")
 	if err != nil && err != mem.ErrNoPhysicalFootprint {
-		return errors.Wrapf(err, "Unable to query touch footprint")
+		log.Println("Unable to query touch footprint")
+		touchFootprint = mem.Footprint(0)
 	}
 	vmstat, err := mem.GetVMStat()
 	if err != nil {
