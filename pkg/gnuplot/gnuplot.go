@@ -102,7 +102,7 @@ func writeGp(g *Graph, dir, pngPath string) error {
 	defer gp.Close()
 	var plots []string
 	for _, line := range g.Lines {
-		plots = append(plots, fmt.Sprintf("'%s' using 1:2 with points title '%s'", filepath.Base(datPath(*line, dir)), line.Label))
+		plots = append(plots, fmt.Sprintf("'%s' using 1:2 with lines title '%s'", filepath.Base(datPath(*line, dir)), line.Label))
 	}
 	path := pngPath
 	if !filepath.IsAbs(pngPath) {
