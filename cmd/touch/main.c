@@ -5,6 +5,13 @@
 
 #define PAGE_SIZE 4096
 
+unsigned long long getTotalSystemMemory()
+{
+    long pages = sysconf(_SC_PHYS_PAGES);
+    long page_size = sysconf(_SC_PAGE_SIZE);
+    return pages * page_size;
+}
+
 static void print_usage(){
     printf("Usage:\n");
     printf("touch -m <memory in MiB>\n");
@@ -35,7 +42,9 @@ static void touch(long mib) {
 }
 
 int main(int argc, char *argv[]) {
-    int option = 0, mib;
+    int option = 0;
+    // add a bit extra to increase the memory pressure
+    int mib = getTotalSystemMemory() / 1048576 + 50;
 
     while ((option = getopt(argc, argv,"m:")) != -1) {
         switch (option) {
