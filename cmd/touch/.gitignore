@@ -1,2 +1,9 @@
 touch
 touch.darwin
+foo.img
+foo.qcow2
+touch-cmdline
+touch-initrd.img
+touch-kernel
+touch-state/
+touch.iso
