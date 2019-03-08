@@ -34,17 +34,6 @@ func main() {
 func doHyperkit(running, macOS int) {
 	dir := getDir(running, macOS)
 
-	VSZPoints, err := sample.ReadDir(dir, func(s sample.Sample) int64 {
-		for _, command := range s.PS {
-			if command.Command == hyperkit {
-				return command.VSZ
-			}
-		}
-		return int64(0)
-	})
-	if err != nil {
-		log.Fatal(err)
-	}
 	RSSPoints, err := sample.ReadDir(dir, func(s sample.Sample) int64 {
 		for _, command := range s.PS {
 			if command.Command == hyperkit {
@@ -58,7 +47,7 @@ func doHyperkit(running, macOS int) {
 	}
 	t := "Docker"
 	if running == k8s {
-		t = "k8s"
+		t = "Docker and Kubernetes"
 	}
 	m := "10.12"
 	if macOS == macOS1014 {
@@ -66,12 +55,8 @@ func doHyperkit(running, macOS int) {
 	}
 	lines := []*gnuplot.Line{
 		&gnuplot.Line{
-			Label:  "Resident Memory (RSS)",
+			Label:  "com.docker.hyperkit \"Real Mem\" in Activity Monitor",
 			Points: RSSPoints,
-		},
-		&gnuplot.Line{
-			Label:  "Virtual Size (VSZ)",
-			Points: VSZPoints,
 		},
 	}
 	if macOS == macOS1014 {
@@ -82,14 +67,15 @@ func doHyperkit(running, macOS int) {
 			log.Fatal(err)
 		}
 		lines = append(lines, &gnuplot.Line{
-			Label:  "physical footprint",
+			Label:  "com.docker.hyperkit \"Memory\" in Activity Monitor",
 			Points: footprintPoints,
 		})
 	}
 
 	g := gnuplot.Graph{
-		Title: "hyperkit memory usage, " + m + " + " + t,
+		Title: "Memory usage with VM set to 2GB on macOS " + m + " with " + t,
 		Lines: lines,
+		Time:  gnuplot.Hours,
 	}
 	if err := g.Render("footprint-hyperkit-" + dir + ".png"); err != nil {
 		log.Fatalf("Failed to render: %v", err)
