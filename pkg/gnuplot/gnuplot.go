@@ -13,8 +13,10 @@ import (
 
 // Graph is a simple time-series gnuplot graph
 type Graph struct {
-	Title string
-	Lines []*Line
+	Title  string
+	Lines  []*Line
+	Format Format
+	Time   Time
 }
 
 // Line represents the evolution of some labelled parameter over time
@@ -29,19 +31,36 @@ type Point struct {
 	Memory int64   // Memory value
 }
 
+// Format of the rendered output
+type Format int
+
+const (
+	PNG = Format(0)
+	SVG = Format(1)
+)
+
+// Time unit to use on the x axis
+type Time int
+
+const (
+	Seconds = Time(0)
+	Hours   = Time(1)
+)
+
 const kib = int64(1024)
 const mib = int64(1024) * kib
 const gib = int64(1024) * mib
 
-// Render renders a graph to a .png
-func (g *Graph) Render(pngPath string) error {
+// Render renders a graph
+func (g *Graph) Render(path string) error {
 	dir, err := ioutil.TempDir("", "gnuplot")
 	if err != nil {
 		return err
 	}
-	defer os.RemoveAll(dir)
+	//defer os.RemoveAll(dir)
+	fmt.Printf("%s\n", dir)
 
-	if err := writeGp(g, dir, pngPath); err != nil {
+	if err := writeGp(g, dir, path); err != nil {
 		return err
 	}
 	if err := writeDats(g, dir); err != nil {
@@ -62,14 +81,14 @@ func writeDats(g *Graph, dir string) error {
 		return errors.New("There must be at least one line to plot")
 	}
 	for _, line := range g.Lines {
-		if err := writeDat(*line, dir); err != nil {
+		if err := writeDat(g, *line, dir); err != nil {
 			return errors.Wrapf(err, "while plotting %s", line.Label)
 		}
 	}
 	return nil
 }
 
-func writeDat(l Line, dir string) error {
+func writeDat(g *Graph, l Line, dir string) error {
 	dat, err := os.Create(datPath(l, dir))
 	if err != nil {
 		return err
@@ -79,7 +98,11 @@ func writeDat(l Line, dir string) error {
 		return err
 	}
 	for _, point := range l.Points {
-		if _, err := fmt.Fprintf(dat, "%f %f\n", point.Second, float64(point.Memory)/float64(gib)); err != nil {
+		time := point.Second
+		if g.Time == Hours {
+			time = time / 3600.0
+		}
+		if _, err := fmt.Fprintf(dat, "%f %f\n", time, float64(point.Memory)/float64(gib)); err != nil {
 			return err
 		}
 	}
@@ -112,12 +135,29 @@ func writeGp(g *Graph, dir, pngPath string) error {
 		}
 		path = filepath.Join(cwd, pngPath)
 	}
+	// round up to the next GiB
+	maxMem := (maxMemoryValue(g) + gib - int64(1)) / gib
+	var terminal string
+	switch g.Format {
+	case SVG:
+		terminal = "svg"
+	default:
+		terminal = "png"
+	}
+	var xlabel string
+	switch g.Time {
+	case Hours:
+		xlabel = "Time/hours"
+	default:
+		xlabel = "Time/seconds"
+	}
 	lines := []string{
-		fmt.Sprintf("set terminal png"),
+		fmt.Sprintf("set terminal " + terminal),
 		fmt.Sprintf("set output '%s'", path),
 		fmt.Sprintf("set title '%s'", g.Title),
-		fmt.Sprintf("set xlabel 'Time/s'"),
+		fmt.Sprintf("set xlabel '%s'", xlabel),
 		fmt.Sprintf("set ylabel 'Memory/GiB'"),
+		fmt.Sprintf("set yrange [0:%d]", maxMem+1),
 		//"set timefmt '%s'",
 		//"set xdata time",
 		fmt.Sprintf("plot %s", strings.Join(plots, ", ")),
@@ -128,4 +168,16 @@ func writeGp(g *Graph, dir, pngPath string) error {
 		}
 	}
 	return nil
+}
+
+func maxMemoryValue(g *Graph) int64 {
+	m := int64(0)
+	for _, line := range g.Lines {
+		for _, point := range line.Points {
+			if point.Memory > m {
+				m = point.Memory
+			}
+		}
+	}
+	return m
 }
