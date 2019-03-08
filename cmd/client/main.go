@@ -50,27 +50,25 @@ func main() {
 }
 
 func connect() net.Conn {
-	for {
-		conn, err := net.Dial("tcp", "127.0.0.1:1234")
-		if err == nil {
-			return conn
-		}
-		fmt.Println("Error dialing:", err.Error())
-		time.Sleep(time.Second)
+	conn, err := net.Dial("tcp", "127.0.0.1:1234")
+	if err == nil {
+		log.Printf("Failed to connect to server: %v", err)
 	}
+	return conn
 }
 
 func one(output *os.File) error {
-	conn := connect()
-	defer conn.Close()
-
 	var mi mem.Meminfo
 
-	dec := json.NewDecoder(conn)
-	if err := dec.Decode(&mi); err != nil {
-		return errors.Wrapf(err, "Unable to decode json")
-	}
+	conn := connect()
+	if conn != nil {
+		defer conn.Close()
 
+		dec := json.NewDecoder(conn)
+		if err := dec.Decode(&mi); err != nil {
+			return errors.Wrapf(err, "Unable to decode json")
+		}
+	}
 	ps, err := mem.GetPS()
 	if err != nil {
 		return errors.Wrapf(err, "Unable to query ps")
