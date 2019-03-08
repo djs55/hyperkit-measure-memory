@@ -1,11 +1,15 @@
 package gnuplot
 
 import (
+	"bufio"
 	"fmt"
+	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -180,4 +184,43 @@ func maxMemoryValue(g *Graph) int64 {
 		}
 	}
 	return m
+}
+
+// ReadPoints reads a gnuplot-format datafile
+func ReadPoints(file string) ([]*Point, error) {
+	f, err := os.Open(file)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	b := bufio.NewReader(f)
+	var results []*Point
+	for {
+		line, err := b.ReadString(byte('\n'))
+		if err == io.EOF {
+			return results, nil
+		}
+		// trim comment
+		line = strings.Split(line, "#")[0]
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		parts := strings.SplitN(line, " ", 2)
+		if len(parts) != 2 {
+			log.Printf("Skipping line with len <> 2: %s", line)
+			continue
+		}
+		second, err := strconv.ParseFloat(parts[0], 64)
+		if err != nil {
+			log.Printf("Skipping non-float: %s", line)
+			continue
+		}
+		memory, err := strconv.ParseInt(parts[1], 10, 64)
+		if err != nil {
+			log.Printf("Skipping non-int64: %s", line)
+			continue
+		}
+		results = append(results, &Point{Second: second, Memory: memory})
+	}
 }
