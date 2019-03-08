@@ -40,7 +40,7 @@ func doHyperkit(macOS int) {
 	}
 	lines := []*gnuplot.Line{
 		&gnuplot.Line{
-			Label:  "Resident Memory (RSS)",
+			Label:  "com.docker.hyperkit \"Real Mem\" in Activity Monitor",
 			Points: RSSPoints,
 		},
 	}
@@ -52,13 +52,13 @@ func doHyperkit(macOS int) {
 			log.Fatal(err)
 		}
 		lines = append(lines, &gnuplot.Line{
-			Label:  "physical footprint",
+			Label:  "com.docker.hyperkit \"Memory\" in Activity Monitor",
 			Points: footprintPoints,
 		})
 	}
 
 	g := gnuplot.Graph{
-		Title: "hyperkit memory usage, " + m,
+		Title: "Memory usage with VM set to 4GB on macOS " + m,
 		Lines: lines,
 	}
 	if err := g.Render("footprint-" + dir + ".png"); err != nil {
