@@ -79,7 +79,8 @@ func one(output *os.File) error {
 	}
 	firefoxFootprint, err := mem.GetFootprint("firefox")
 	if err != nil && err != mem.ErrNoPhysicalFootprint {
-		return errors.Wrapf(err, "Unable to query firefox footprint")
+		log.Println("Unable to query firefox footprint")
+		firefoxFootprint = mem.Footprint(0)
 	}
 	touchFootprint, err := mem.GetFootprint("touch")
 	if err != nil && err != mem.ErrNoPhysicalFootprint {
